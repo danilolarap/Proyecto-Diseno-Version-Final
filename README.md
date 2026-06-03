@@ -1,5 +1,5 @@
 1. Diagrama de Contexto
-<img width="1460" height="1069" alt="System Context Diagram (1)" src="https://github.com/user-attachments/assets/15d96072-53c9-4c6a-987a-b0e4966a64ad" />
+<img width="1442" height="1082" alt="System Context Diagram (2)" src="https://github.com/user-attachments/assets/feed55b6-9727-4ef6-ad2c-997d66deb47b" />
 
 2. Diagrama de Componentes
 <img width="991" height="524" alt="image" src="https://github.com/user-attachments/assets/2de7def1-885b-43fa-8ad9-aede7c195c93" />
