@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head}"></head>
+<body>
+<nav th:replace="~{layout :: nav}"></nav>
+
+<div class="container mt-4">
+    <div id="alertBox" class="alert d-none" role="alert"></div>
+
+    <ul class="nav nav-tabs mb-4" id="myTab">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pets">Mascotas</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#adopters">Adoptantes</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#requests">Solicitudes</button></li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="pets">
+            <div class="card p-3 mb-4 shadow-sm border-0">
+                <form onsubmit="handleSave(event, '/api/mascotas')" class="row g-2">
+                    <div class="col-md-4"><input type="text" class="form-control" name="nombre" placeholder="Nombre Mascota" required></div>
+                    <div class="col-md-3"><input type="text" class="form-control" name="especie" placeholder="Especie" required></div>
+                    <div class="col-md-2"><input type="text" class="form-control" name="edad" placeholder="Edad" oninput="this.value=this.value.replace(/[^0-9]/g,'')" required></div>
+                    <div class="col-md-3"><button type="submit" class="btn btn-primary w-100">Guardar Mascota</button></div>
+                </form>
+            </div>
+            <table class="table table-striped text-center">
+                <thead class="table-dark"><tr><th>Nombre</th><th>Especie</th><th>Estado</th><th>Acción</th></tr></thead>
+                <tbody>
+                <tr th:each="m : ${mascotas}">
+                    <td th:text="${m.nombre}"></td><td th:text="${m.especie}"></td>
+                    <td th:text="${m.estado}"></td>
+                    <td>
+                        <button class="btn btn-sm btn-info text-white"
+                                th:data-id="${m.id}"
+                                onclick="requestAdoption(this.getAttribute('data-id'))">Solicitar</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tab-pane fade" id="adopters">
+            <div class="card p-3 mb-4 shadow-sm border-0">
+                <form onsubmit="handleSave(event, '/api/adoptantes')" class="row g-2">
+                    <div class="col-md-5"><input type="text" class="form-control" name="nombre" placeholder="Nombre Completo" required></div>
+                    <div class="col-md-4"><input type="email" class="form-control" name="correo" placeholder="Correo Electrónico" required></div>
+                    <div class="col-md-3"><button type="submit" class="btn btn-success w-100">Registrar Adoptante</button></div>
+                </form>
+            </div>
+            <table class="table table-striped text-center">
+                <thead class="table-dark"><tr><th>ID para copiar</th><th>Nombre</th><th>Correo</th></tr></thead>
+                <tbody>
+                <tr th:each="a : ${adoptantes}">
+                    <td class="small font-monospace" th:text="${a.id}"></td>
+                    <td th:text="${a.nombre}"></td>
+                    <td th:text="${a.correo}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tab-pane fade" id="requests">
+            <table class="table table-striped text-center">
+                <thead class="table-dark"><tr><th>Mascota</th><th>Adoptante</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody>
+                <tr th:each="s : ${solicitudes}">
+                    <td th:text="${s.nombreMascota}"></td><td th:text="${s.nombreAdoptante}"></td>
+                    <td th:text="${s.estadoSolicitud}"></td>
+                    <td>
+                        <div th:if="${s.estadoSolicitud.name() == 'PENDIENTE'}">
+                            <button class="btn btn-sm btn-success" th:data-id="${s.id}" onclick="handleAction(this.getAttribute('data-id'), 'aprobar')">Aprobar</button>
+                            <button class="btn btn-sm btn-danger" th:data-id="${s.id}" onclick="handleAction(this.getAttribute('data-id'), 'rechazar')">Rechazar</button>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout :: scripts}"></div>
+<script>
+    async function handleSave(e, url) {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target));
+        try {
+            const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            if(res.ok) { showMsg("¡Registrado con éxito!", "success"); setTimeout(() => location.reload(), 1000); }
+            else { const err = await res.json(); showMsg("Error: " + err.error, "danger"); }
+        } catch(e) { showMsg("Error de conexión", "danger"); }
+    }
+
+    async function requestAdoption(mId) {
+        const aId = prompt("Pega el ID del Adoptante:");
+        if(!aId) return;
+        const res = await fetch('/api/solicitudes', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({mascotaId:mId, adoptanteId:aId})});
+        if(res.ok) { showMsg("¡Solicitud enviada!", "success"); setTimeout(() => location.reload(), 1000); }
+        else { const err = await res.json(); showMsg("Error: " + err.error, "danger"); }
+    }
+
+    async function handleAction(id, action) {
+        const res = await fetch(`/api/solicitudes/${id}/${action}?observaciones=${action}`, {method:'PATCH'});
+        if(res.ok) { showMsg("¡Solicitud procesada!", "success"); setTimeout(() => location.reload(), 1000); }
+    }
+
+    function showMsg(txt, type) {
+        const box = document.getElementById('alertBox');
+        box.innerText = txt;
+        box.className = `alert alert-${type}`;
+        box.classList.remove('d-none');
+        window.scrollTo(0,0);
+    }
+</script>
+</body>
+</html>
